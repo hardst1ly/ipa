@@ -1,0 +1,40 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Сборка архива (замени YourScheme и YourProject на свои)
+      - name: Build Archive
+        run: |
+          xcodebuild -scheme "YourScheme" \
+            -project "YourProject.xcodeproj" \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            archive
+
+      # Запаковка .app в .ipa
+      - name: Package to IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/App.xcarchive/Products/Applications/*.app Payload/
+          zip -r -q "App.ipa" Payload
+          rm -rf Payload
+
+      # Выгрузка готового IPA в артефакты
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-ipa
+          path: App.ipa
