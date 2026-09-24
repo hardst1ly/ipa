@@ -43,6 +43,7 @@ jobs:
         run: |
           xcrun -sdk iphoneos swiftc \
             -target arm64-apple-ios15.0 \
+            -parse-as-library \
             -O main.swift \
             -o TestApp
 
