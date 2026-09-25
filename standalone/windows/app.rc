@@ -1,0 +1,32 @@
+#pragma code_page(65001)
+#include <windows.h>
+
+// ID 32512 = IDI_APPLICATION: webview берёт иконку окна именно отсюда
+32512 ICON "app.ico"
+
+1 RT_MANIFEST "app.manifest"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "041904B0"
+    BEGIN
+      VALUE "CompanyName",      "hardst1ly"
+      VALUE "FileDescription",  "Расписание уроков"
+      VALUE "FileVersion",      "1.0.0"
+      VALUE "InternalName",     "Raspisanie"
+      VALUE "OriginalFilename", "Raspisanie.exe"
+      VALUE "ProductName",      "Расписание уроков"
+      VALUE "ProductVersion",   "1.0.0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0419, 1200
+  END
+END
