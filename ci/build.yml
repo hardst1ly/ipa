@@ -1,60 +1,160 @@
-name: Build Schedule IPA
+# Сборка «Расписания уроков» для iOS (.ipa), Android (.apk) и Windows (.exe).
+# Этот файл нужно положить в .github/workflows/build.yml (см. README).
+name: Build Schedule (ipa, apk, exe)
 
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
-    runs-on: macos-14
-
-    env:
-      APP_NAME: Schedule
-      APP_DIR: Payload/Schedule.app
-
+  android:
+    name: Android (.apk)
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Show toolchain
-        run: |
-          xcodebuild -version
-          xcrun -sdk iphoneos swiftc --version
-
-      - name: Compile Swift to iOS binary (arm64)
-        run: |
-          mkdir -p "$APP_DIR"
-          xcrun -sdk iphoneos swiftc \
-            -target arm64-apple-ios15.0 \
-            -parse-as-library \
-            -O \
-            Sources/*.swift \
-            -o "$APP_DIR/$APP_NAME"
-
-      - name: Add Info.plist and icons
-        run: |
-          cp Resources/Info.plist "$APP_DIR/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$APP_DIR/Info.plist"
-          plutil -lint "$APP_DIR/Info.plist"
-
-          icon() { sips -s format png -z "$1" "$1" Resources/AppIcon.png --out "$APP_DIR/$2" >/dev/null; }
-          icon 120 AppIcon60x60@2x.png
-          icon 180 AppIcon60x60@3x.png
-          icon 76  AppIcon76x76~ipad.png
-          icon 152 AppIcon76x76@2x~ipad.png
-          icon 167 AppIcon83.5x83.5@2x~ipad.png
-          ls -la "$APP_DIR"
-
-      - name: Package into IPA
-        run: |
-          zip -r -q "$APP_NAME.ipa" Payload
-          ls -la "$APP_NAME.ipa"
-
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          name: Schedule-ipa
-          path: Schedule.ipa
-          retention-days: 7
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
+      - name: Sync web app into Android project
+        run: npx cap sync android
+
+      - name: Build signed release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/Raspisanie.apk
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Raspisanie-android-apk
+          path: out/Raspisanie.apk
+          retention-days: 14
+
+  ios:
+    name: iOS (.ipa, без подписи)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
+      - name: Sync web app into iOS project
+        run: npx cap sync ios
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build (without code signing)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build | xcbeautify
+
+      - name: Package IPA
+        run: |
+          APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          echo "App bundle: $APP"
+          mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          cd out
+          zip -qry Raspisanie.ipa Payload
+          rm -rf Payload
+          ls -la
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Raspisanie-ios-ipa
+          path: out/Raspisanie.ipa
+          retention-days: 14
+
+  windows:
+    name: Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build portable exe and installer
+        run: npx electron-builder --win --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: List output
+        shell: bash
+        run: ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Raspisanie-windows-exe
+          path: dist/*.exe
+          retention-days: 14
+
+  release:
+    name: GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ android, ios, windows ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true

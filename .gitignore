@@ -1,0 +1,6 @@
+node_modules/
+dist/
+build/
+.arena-shots/
+*.log
+.DS_Store

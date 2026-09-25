@@ -1,0 +1,54 @@
+{
+  "name": "raspisanie",
+  "productName": "Расписание",
+  "version": "1.0.0",
+  "description": "Расписание уроков — iOS, Android и Windows",
+  "author": "hardst1ly",
+  "license": "MIT",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "serve": "python3 -m http.server 8080 --bind 0.0.0.0 --directory www",
+    "sync": "cap sync",
+    "electron": "electron .",
+    "build:win": "electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.hardst1ly.schedule",
+    "productName": "Расписание",
+    "executableName": "Raspisanie",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**",
+      "www/**",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.png",
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "portable": {
+      "artifactName": "Raspisanie-${version}-portable.exe"
+    },
+    "nsis": {
+      "artifactName": "Raspisanie-${version}-setup.exe",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Расписание уроков",
+      "createDesktopShortcut": true
+    }
+  }
+}
