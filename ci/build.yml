@@ -1,0 +1,60 @@
+name: Build Schedule IPA
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    env:
+      APP_NAME: Schedule
+      APP_DIR: Payload/Schedule.app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun -sdk iphoneos swiftc --version
+
+      - name: Compile Swift to iOS binary (arm64)
+        run: |
+          mkdir -p "$APP_DIR"
+          xcrun -sdk iphoneos swiftc \
+            -target arm64-apple-ios15.0 \
+            -parse-as-library \
+            -O \
+            Sources/*.swift \
+            -o "$APP_DIR/$APP_NAME"
+
+      - name: Add Info.plist and icons
+        run: |
+          cp Resources/Info.plist "$APP_DIR/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$APP_DIR/Info.plist"
+          plutil -lint "$APP_DIR/Info.plist"
+
+          icon() { sips -s format png -z "$1" "$1" Resources/AppIcon.png --out "$APP_DIR/$2" >/dev/null; }
+          icon 120 AppIcon60x60@2x.png
+          icon 180 AppIcon60x60@3x.png
+          icon 76  AppIcon76x76~ipad.png
+          icon 152 AppIcon76x76@2x~ipad.png
+          icon 167 AppIcon83.5x83.5@2x~ipad.png
+          ls -la "$APP_DIR"
+
+      - name: Package into IPA
+        run: |
+          zip -r -q "$APP_NAME.ipa" Payload
+          ls -la "$APP_NAME.ipa"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Schedule-ipa
+          path: Schedule.ipa
+          retention-days: 7
