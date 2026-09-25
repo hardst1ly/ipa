@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <title>Расписание уроков</title>
+  <link rel="icon" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <h1>Расписание</h1>
+        <div id="today-date" class="subtitle"></div>
+      </div>
+      <button id="btn-menu" class="icon-btn" aria-label="Меню" title="Меню">
+        <svg viewBox="0 0 24 24" width="24" height="24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </button>
+    </header>
+
+    <section id="status" class="status-card" aria-live="polite"></section>
+
+    <nav id="tabs" class="tabs" role="tablist"></nav>
+
+    <main id="content" class="content"></main>
+  </div>
+
+  <button id="fab" class="fab" aria-label="Добавить урок" title="Добавить урок">
+    <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+  </button>
+
+  <!-- Overlays -->
+  <div id="overlay" class="overlay hidden"></div>
+
+  <div id="sheet-menu" class="sheet hidden" role="dialog" aria-label="Меню">
+    <div class="sheet-handle"></div>
+    <button class="menu-item" data-action="today">📅 Перейти к сегодня</button>
+    <button class="menu-item" data-action="copy">📋 Скопировать день в…</button>
+    <button class="menu-item" data-action="export">📤 Экспорт расписания</button>
+    <button class="menu-item" data-action="import">📥 Импорт расписания</button>
+    <button class="menu-item" data-action="reset">↩️ Восстановить пример</button>
+    <button class="menu-item danger" data-action="clear">🗑️ Очистить день</button>
+    <button class="menu-item cancel" data-action="close">Закрыть</button>
+  </div>
+
+  <div id="sheet-copy" class="sheet hidden" role="dialog" aria-label="Скопировать день">
+    <div class="sheet-handle"></div>
+    <h2 id="copy-title">Скопировать день в…</h2>
+    <div id="copy-days" class="copy-days"></div>
+    <button class="menu-item cancel" data-close>Отмена</button>
+  </div>
+
+  <form id="sheet-editor" class="sheet hidden" role="dialog" aria-label="Урок" autocomplete="off">
+    <div class="sheet-handle"></div>
+    <h2 id="editor-title">Новый урок</h2>
+    <label class="field">
+      <span>Предмет</span>
+      <input id="f-subject" list="subjects" placeholder="Например, Математика" required maxlength="60">
+    </label>
+    <datalist id="subjects"></datalist>
+    <div class="row">
+      <label class="field">
+        <span>Начало</span>
+        <input id="f-start" type="time" required>
+      </label>
+      <label class="field">
+        <span>Конец</span>
+        <input id="f-end" type="time" required>
+      </label>
+    </div>
+    <div class="row">
+      <label class="field">
+        <span>Кабинет</span>
+        <input id="f-room" placeholder="Например, 21" maxlength="30">
+      </label>
+      <label class="field">
+        <span>День</span>
+        <select id="f-day"></select>
+      </label>
+    </div>
+    <label class="field">
+      <span>Учитель</span>
+      <input id="f-teacher" placeholder="ФИО учителя" maxlength="60">
+    </label>
+    <p id="editor-error" class="error hidden"></p>
+    <div class="actions">
+      <button type="button" id="btn-delete" class="btn danger-outline">Удалить</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn secondary" data-close>Отмена</button>
+      <button type="submit" class="btn primary">Сохранить</button>
+    </div>
+  </form>
+
+  <div id="sheet-io" class="sheet hidden" role="dialog" aria-label="Экспорт и импорт">
+    <div class="sheet-handle"></div>
+    <h2 id="io-title">Экспорт</h2>
+    <p id="io-hint" class="hint"></p>
+    <textarea id="io-text" rows="8" spellcheck="false"></textarea>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn secondary" data-close>Закрыть</button>
+      <button type="button" id="io-action" class="btn primary">Копировать</button>
+    </div>
+  </div>
+
+  <div id="sheet-confirm" class="sheet small hidden" role="alertdialog">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-text" class="hint"></p>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button type="button" id="confirm-cancel" class="btn secondary">Отмена</button>
+      <button type="button" id="confirm-ok" class="btn primary">OK</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

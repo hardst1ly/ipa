@@ -1,0 +1,12 @@
+{
+  "appId": "com.hardst1ly.schedule",
+  "appName": "Расписание",
+  "webDir": "www",
+  "backgroundColor": "#f2f2f7",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DEFAULT"
+    }
+  }
+}
